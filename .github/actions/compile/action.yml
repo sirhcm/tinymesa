@@ -20,7 +20,7 @@ runs:
         python -m pip install meson mako pyyaml packaging
     - name: Install rust deps
       shell: bash
-      run: cargo install bindgen cbindgen
+      run: cargo install bindgen-cli cbindgen
     - name: Setup APT
       shell: bash
       run: |
