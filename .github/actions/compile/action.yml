@@ -47,7 +47,7 @@ runs:
         git clone --depth 1 --branch ${{ inputs.mesa-tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
         cd ${{ github.workspace }}/mesa
         sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
-        meson setup build/ -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
+        meson setup build/ -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast,nouveau -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
         ninja -C build src/compiler/nir/libnir.a src/gallium/auxiliary/libgallium.a src/nouveau/compiler/libnak.a src/nouveau/compiler/libnak_rs.a \
           src/compiler/libcompiler.a src/compiler/rust/libcompiler_c_helpers.a src/util/libmesa_util.a src/c11/impl/libmesa_util_c11.a src/util/blake3/libblake3.a
         c++ -o libnir.so -shared -fPIC -Wl,--no-undefined -Wl,--whole-archive build/src/compiler/nir/libnir.a -Wl,--no-whole-archive \
