@@ -48,7 +48,8 @@ runs:
         cd ${{ github.workspace }}/mesa
         sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
         meson setup build/ -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
-        ninja -C build src/gallium/auxilliary/libgallium.a src/compiler/nir/libnir.a src/compiler/libcompiler.a src/util/libmesa_util.a src/c11/impl/libmesa_util_c11.a mesa/build/src/util/blake3/libblake3.a
+        ninja -C build build/src/compiler/nir/libnir.a build/src/gallium/auxiliary/libgallium.a build/src/nouveau/compiler/libnak.a build/src/nouveau/compiler/libnak_rs.a \
+          build/src/compiler/libcompiler.a build/src/compiler/rust/libcompiler_c_helpers.a build/src/util/libmesa_util.a build/src/c11/impl/libmesa_util_c11.a build/src/util/blake3/libblake3.a
         c++ -o libnir.so -shared -fPIC -Wl,--no-undefined -Wl,--whole-archive build/src/compiler/nir/libnir.a -Wl,--no-whole-archive \
           build/src/compiler/libcompiler.a build/src/util/libmesa_util.a build/src/util/blake3/libblake3.a
         c++ -o liblvp.so -shared -fPIC -Wl,--no-undefined -Wl,-T,${{ github.workspace }}/lvp.ld build/src/gallium/auxiliary/libgallium.a \
