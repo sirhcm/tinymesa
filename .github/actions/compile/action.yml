@@ -88,4 +88,5 @@ runs:
           -Wl,--start-group $(find build/src -name "*.a" | grep -Ev "nir|nak") -Wl,--end-group \
           -ltinymesa -L.
     - name: Test loading
+      shell: bash
       run: LD_LIBRARY_PATH=. python3 -c "import ctypes; ctypes.CDLL('./libtinymesa.so'), ctypes.CDLL('libtinymesa_lvp.so'), ctypes.CDLL('libtinymesa_nak.so')"
