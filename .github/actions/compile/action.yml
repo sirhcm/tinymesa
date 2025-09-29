@@ -18,6 +18,9 @@ runs:
         . .venv/bin/activate
         echo "${{ github.workspace }}/.venv/bin" >> "$GITHUB_PATH"
         python -m pip install meson mako pyyaml packaging
+    - name: Install rust deps
+      shell: bash
+      run: cargo install bindgen cbindgen
     - name: Setup APT
       shell: bash
       run: |
