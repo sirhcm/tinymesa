@@ -24,7 +24,7 @@ jobs:
             | sed 's,refs/tags/,,g' \
             | awk -F'[-.]' '$2 >= 24 { if ($4 > max_patch[$2 "." $3]) max_patch[$2 "." $3] = $4 } END { for (key in max_patch) print "mesa-" key "." max_patch[key] }' \
             | sort -V \
-            | jq -R . | jq -s . \
+            | jq -R . | jq -cs .
           )
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
   build-and-release:
