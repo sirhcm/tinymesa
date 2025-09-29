@@ -47,15 +47,15 @@ runs:
         curl -L https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C /usr --strip-components=2
         sudo tee /usr/lib/pkgconfig/SPIRV-Tools.pc <<EOF
         prefix=/usr
-        libdir=${prefix}/lib
-        includedir=${prefix}/include
+        libdir=\${prefix}/lib
+        includedir=\${prefix}/include
 
         Name: SPIRV-Tools
         Description: Tools for SPIR-V
         Version: 2025.3
 
-        Libs: -L${libdir} -lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link
-        Cflags: -I${includedir}
+        Libs: -L\${libdir} -lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link
+        Cflags: -I\${includedir}
         EOF
     - name: Build mesa
       shell: bash
