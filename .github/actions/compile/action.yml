@@ -21,6 +21,7 @@ runs:
       run: |
         python -m venv .venv
         . .venv/bin/activate
+        echo "${{ github.workspace }}/.venv/bin" >> "$GITHUB_PATH"
         python -m pip install meson mako pyyaml
     - name: Setup APT
       shell: bash
