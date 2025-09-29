@@ -77,7 +77,7 @@ runs:
         cd ${{ github.workspace }}/mesa
         sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
         export CLANG_PATH=$(which clang-20)
-        meson setup build/ -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast,nouveau -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
+        meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast,nouveau -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
         ninja -C build
         c++ -s -o libtinymesa.so -shared -fPIC -Wl,--no-undefined -Wl,--whole-archive build/src/compiler/nir/libnir.a -Wl,--no-whole-archive \
           -Wl,--start-group $(find build/src -name "*.a" | grep -v "nir") -Wl,--end-group
@@ -87,3 +87,5 @@ runs:
         c++ -s -o libtinymesa_nak.so -shared -fPIC -Wl,--no-undefined -Wl,-T,${{ github.workspace }}/nak.ld build/src/nouveau/compiler/libnak.a build/src/nouveau/compiler/libnak_rs.a \
           -Wl,--start-group $(find build/src -name "*.a" | grep -Ev "nir|nak") -Wl,--end-group \
           -ltinymesa -L.
+    - name: Test loading
+      run: LD_LIBRARY_PATH=. python3 -c "import ctypes; ctypes.CDLL('./libtinymesa.so'), ctypes.CDLL('libtinymesa_lvp.so'), ctypes.CDLL('libtinymesa_nak.so')"
