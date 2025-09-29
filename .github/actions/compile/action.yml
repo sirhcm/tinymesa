@@ -1,0 +1,71 @@
+name: Compile tinymesa
+description: Compiles a specific mesa version and extracts tinymesa.
+inputs:
+  mesa-tag:
+    description: "mesa tag to compile"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v6
+    - name: Cache Python packages
+      id: restore-venv
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/.venv
+        key: venv-${{ runner.os }}
+    - name: Install Python packages
+      if: steps.restore-venv.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        python -m venv .venv
+        . .venv/bin/activate
+        python -m pip install meson mako pyyaml
+    - name: Setup APT
+      shell: bash
+      run: |
+        sudo chown -R $USER:$USER /var/cache/apt/archives
+        echo 'Acquire::GzipIndexes "true";' | sudo tee /etc/apt/apt.conf.d/gzip
+        echo 'Acquire::http::Pipeline-Depth "5";' | sudo tee -a /etc/apt/apt.conf.d/99parallel
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' | sudo tee -a /etc/apt/apt.conf.d/99keep-debs
+        wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+        echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+    - name: Cache APT
+      uses: actions/cache@v4
+      with:
+        path: /var/cache/apt/archives/
+        key: apt-${{ runner.os }}-${{ env.APT_CACHE_VERSION }}
+    - name: APT update + install
+      shell: bash
+      run: |
+        sudo apt -qq update || true
+        sudo apt-get -y --allow-unauthenticated --no-install-recommends install libllvm20 clang-20 lld-20 libdrm-dev libclc-20-dev libclang-20-dev llvm-20-dev
+        sudo chown -R $USER:$USER /var/cache/apt/archives/
+    - name: Install vulkan SDK
+      shell: bash
+      run: curl -L https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C /usr --strip-components=2
+    - name: Build mesa
+      shell: bash
+      run: |
+        git clone --depth 1 --branch ${{ inputs.tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
+        cd ${{ github.workspace }}/mesa
+        sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
+        meson setup build/ -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
+        ninja -C build src/gallium/auxilliary/libgallium.a src/compiler/nir/libnir.a src/compiler/libcompiler.a src/util/libmesa_util.a src/c11/impl/libmesa_util_c11.a mesa/build/src/util/blake3/libblake3.a
+        c++ -o libnir.so -shared -fPIC -Wl,--no-undefined -Wl,--whole-archive build/src/compiler/nir/libnir.a -Wl,--no-whole-archive \
+          build/src/compiler/libcompiler.a build/src/util/libmesa_util.a build/src/util/blake3/libblake3.a
+        c++ -o liblvp.so -shared -fPIC -Wl,--no-undefined -Wl,-T,${{ github.workspace }}/lvp.ld build/src/gallium/auxiliary/libgallium.a \
+          build/src/util/libmesa_util.a build/src/c11/impl/libmesa_util_c11.a \
+          -lLLVM-20 -lnir -L.
+        c++ -o libnak.so -shared -fPIC -Wl,--no-undefined -Wl,-T,${{ github.workspace }}/nak.ld build/src/nouveau/compiler/libnak.a build/src/nouveau/compiler/libnak_rs.a \
+          build/src/compiler/rust/libcompiler_c_helpers.a \
+          -lLLVM-20 -lnir -L.
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: tinymesa-${{ inputs.tag }}
+        path: |
+          ${{ github.workspace }}/mesa/libnir.so
+          ${{ github.workspace }}/mesa/liblvp.so
+          ${{ github.workspace }}/mesa/libnak.so

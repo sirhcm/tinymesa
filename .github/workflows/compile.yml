@@ -1,0 +1,58 @@
+name: Compile mesa releases
+
+on:
+  workflow_dispatch:
+  schedule:
+    cron: 15 0 * * *
+
+permissions:
+  contents: write
+
+jobs:
+  find-tags:
+    runs-on: ubuntu-24.04
+    outputs:
+      tags: ${{ steps.get_tags.outputs.tags }}
+    steps:
+      - name: Query mesa tags
+        id: get_tags
+        shell: bash
+        run: |
+          TAGS=$( \
+            git ls-remote --tags --sort="v:refname" https://gitlab.freedesktop.org/mesa/mesa.git \
+            | grep -o 'refs/tags/mesa-[0-9]\+\.[0-9]\+\.[0-9]\+$' \
+            | sed 's,refs/tags/,,g' \
+            | awk -F'[-.]' '$2 >= 24 { if ($4 > max_patch[$2 "." $3]) max_patch[$2 "." $3] = $4 } END { for (key in max_patch) print "mesa-" key "." max_patch[key] }' \
+            | sort -V \
+            | jq -R . | jq -s . \
+          )
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+  build-and-release:
+    name: Build and release tinymesa for -${{ matrix.tag }}
+    runs-on: ubuntu-24.04
+    needs: find-tags
+    if: needs.find-tags.outputs.tags != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJson(needs.find-tags.outputs.tags) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for existing release
+        id: check_release
+        run: gh release view ${{ matrix.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      - name: Build tinymesa
+        if: steps.check_release.outcome == 'failure'
+        uses: ./.github/actions/compile
+        with:
+          mesa-tag: ${{ matrix.tag }}
+      - name: Create release
+        if: steps.check_release.outcome == 'failure'
+        run: gh release create ${{ matrix.tag }} ./artifacts/**/* --title "${{ matrix.tag }}" --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
