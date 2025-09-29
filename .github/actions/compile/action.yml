@@ -76,8 +76,7 @@ runs:
         sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
         export CLANG_PATH=$(which clang-20)
         meson setup build/ -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast,nouveau -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
-        ninja -C build src/compiler/nir/libnir.a src/gallium/auxiliary/libgallium.a src/nouveau/compiler/libnak.a src/nouveau/compiler/libnak_rs.a \
-          src/compiler/libcompiler.a src/compiler/rust/libcompiler_c_helpers.a src/util/libmesa_util.a src/c11/impl/libmesa_util_c11.a src/util/blake3/libblake3.a
+        ninja -C build
         c++ -s -o libtinymesa.so -shared -fPIC -Wl,--no-undefined -Wl,--whole-archive build/src/compiler/nir/libnir.a -Wl,--no-whole-archive \
           -Wl,--start-group $(find build/src -name "*.a" | grep -v "nir") -Wl,--end-group
         c++ -s -o libtinymesa_lvp.so -shared -fPIC -Wl,--no-undefined -Wl,-T,${{ github.workspace }}/lvp.ld build/src/gallium/auxiliary/libgallium.a \
