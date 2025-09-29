@@ -20,12 +20,9 @@ runs:
         python -m pip install meson mako pyyaml packaging
 
     - name: Cache cargo
-      uses: actions/cache@v4
+      uses: Swatinem/rust-cache@v2
       with:
-        path: |
-          ~/.cargo/registry/
-          ~/.cargo/bin/
-        key: cargo-${{ runner.os }}-1
+        key: cargo-${{ runner.os }}-2
     - name: Install rust packages
       shell: bash
       run: cargo install --force bindgen-cli cbindgen
