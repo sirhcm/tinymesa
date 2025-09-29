@@ -48,7 +48,7 @@ runs:
     - name: Build mesa
       shell: bash
       run: |
-        git clone --depth 1 --branch ${{ inputs.tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
+        git clone --depth 1 --branch ${{ inputs.mesa-tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
         cd ${{ github.workspace }}/mesa
         sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
         meson setup build/ -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
@@ -64,7 +64,7 @@ runs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: tinymesa-${{ inputs.tag }}
+        name: tinymesa-${{ inputs.mesa-tag }}
         path: |
           ${{ github.workspace }}/mesa/libnir.so
           ${{ github.workspace }}/mesa/liblvp.so
