@@ -22,7 +22,8 @@ jobs:
         shell: bash
         run: |
           TAGS=$(gh release list --limit 1000 --json tagName -q '.[].tagName')
-          if [[ -z "$TAGS" ]]; then; echo "no releases to delete"
+          if [[ -z "$TAGS" ]]; then
+            echo "no releases to delete"
           else
             for TAG in $TAGS; do
               echo "DELETING: $TAG"
