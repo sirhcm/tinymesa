@@ -28,7 +28,7 @@ runs:
         key: cargo-${{ runner.os }}-1
     - name: Install rust packages
       shell: bash
-      run: cargo install bindgen-cli cbindgen
+      run: cargo install --force bindgen-cli cbindgen
     - name: Setup APT
       shell: bash
       run: |
