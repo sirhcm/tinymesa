@@ -62,11 +62,3 @@ runs:
         c++ -o libtinymesa_nak.so -shared -fPIC -Wl,--no-undefined -Wl,-T,${{ github.workspace }}/nak.ld build/src/nouveau/compiler/libnak.a build/src/nouveau/compiler/libnak_rs.a \
           build/src/compiler/rust/libcompiler_c_helpers.a \
           -lLLVM-20 -ltinymesa -L.
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: tinymesa-${{ inputs.mesa-tag }}
-        path: |
-          ${{ github.workspace }}/mesa/libtinymesa.so
-          ${{ github.workspace }}/mesa/libtinymesa_lvp.so
-          ${{ github.workspace }}/mesa/libtinymesa_nak.so
