@@ -52,7 +52,7 @@ jobs:
           mesa-tag: ${{ matrix.tag }}
       - name: Create release
         if: steps.check_release.outcome == 'failure'
-        run: gh release create ${{ matrix.tag }} ${{ github.workspace }}/mesa/*.so --title "${{ matrix.tag }}"
+        run: gh release create ${{ matrix.tag }} ${{ github.workspace }}/mesa/build/src/tinymesa/*.so --title "${{ matrix.tag }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
