@@ -1,9 +1,15 @@
-name: Compile mesa releases
+name: Build and release tinymesa versions
 
 on:
   workflow_dispatch:
   schedule:
     - cron: '15 0 * * *'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/**'
+      - 'meson.build'
 
 permissions:
   contents: write
@@ -41,7 +47,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Check for existing release
         id: check_release
-        run: gh release view ${{ matrix.tag }}
+        run: gh release view ${{ matrix.tag }}-${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
@@ -52,7 +58,7 @@ jobs:
           mesa-tag: ${{ matrix.tag }}
       - name: Create release
         if: steps.check_release.outcome == 'failure'
-        run: gh release create ${{ matrix.tag }} ${{ github.workspace }}/mesa/build/src/tinymesa/*.so --title "${{ matrix.tag }}"
+        run: awk -f release.awk meson.build | gh release create ${{ matrix.tag }}-${{ github.sha }} ${{ github.workspace }}/mesa/build/src/tinymesa/*.so --title "${{ matrix.tag }} at tinymesa:${{ github.sha }}" -F -
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
