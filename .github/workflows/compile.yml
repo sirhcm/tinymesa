@@ -58,7 +58,7 @@ jobs:
           mesa-tag: ${{ matrix.tag }}
       - name: Create release
         if: steps.check_release.outcome == 'failure'
-        run: awk -f release.awk meson.build | gh release create ${{ matrix.tag }}-${GITHUB_SHA::7} ${{ github.workspace }}/mesa/build/src/tinymesa/*.so --title "${{ matrix.tag }} at tinymesa:${{ github.sha }}" -F -
+        run: awk -f release.awk meson.build | gh release create ${{ matrix.tag }}-${GITHUB_SHA::7} ${{ github.workspace }}/mesa/build/src/tinymesa/*.so --title "${{ matrix.tag }} at tinymesa:${GITHUB_SHA::7}" -F -
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
