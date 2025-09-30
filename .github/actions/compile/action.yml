@@ -81,4 +81,4 @@ runs:
       shell: bash
       run: |
         cd ${{ github.workspace }}/mesa/build/src/tinymesa
-        python3 -c "from ctypes import CDLL; CDLL('libtinymesa.so'), CDLL('libtinymesa_cpu.so')"
+        python3 -c "from ctypes import CDLL; CDLL('./libtinymesa.so'), CDLL('./libtinymesa_cpu.so')"
