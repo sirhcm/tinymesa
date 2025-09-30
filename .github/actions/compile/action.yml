@@ -76,9 +76,9 @@ runs:
         cp ${{ github.workspace }}/meson.build src/tinymesa
         export CLANG_PATH=$(which clang-20)
         meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast,nouveau -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
-        ninja -C build src/tinymesa/libtinymesa_nir.so src/tinymesa/libtinymesa_nak.so src/tinymesa/libtinymesa_lvp.so
+        ninja -C build src/tinymesa/libtinymesa.so src/tinymesa/libtinymesa_cpu.so
     - name: Test loading with ctypes
       shell: bash
       run: |
         cd ${{ github.workspace }}/mesa/build/src/tinymesa
-        LD_LIBRARY_PATH=. python3 -c "from ctypes import CDLL; CDLL('libtinymesa_nir.so'), CDLL('libtinymesa_lvp.so'), CDLL('libtinymesa_nak.so')"
+        python3 -c "from ctypes import CDLL; CDLL('libtinymesa.so'), CDLL('libtinymesa_cpu.so')"

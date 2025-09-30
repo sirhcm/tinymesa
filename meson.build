@@ -1,5 +1,3 @@
-shared_library('tinymesa_nir', link_whole : [ _libnir ])
-
 lvp_symbols = [
   'gallivm_create',
   'gallivm_destroy',
@@ -18,8 +16,6 @@ foreach sym : lvp_symbols
   lvp_link_args += '-Wl,-u,' + sym
 endforeach
 
-shared_library('tinymesa_lvp', link_args : lvp_link_args, link_with : [ libgallium ], dependencies : [ idep_nir, idep_nak ])
-
 nak_symbols = [
   'nak_compiler_create',
   'nak_compiler_destroy',
@@ -37,4 +33,6 @@ foreach sym : nak_symbols
   nak_link_args += '-Wl,-u,' + sym
 endforeach
 
-shared_library('tinymesa_nak', link_args : nak_link_args, dependencies : [ idep_nir, idep_nak ])
+shared_library('tinymesa', link_whole : [ _libnir ], link_args : nak_link_args, dependencies : [ idep_nak ])
+shared_library('tinymesa_cpu', link_whole : [ _libnir ], link_args : lvp_link_args+nak_link_args, link_with : [ libgallium ], dependencies : [ idep_nak ])
+
