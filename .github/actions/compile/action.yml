@@ -18,14 +18,12 @@ runs:
         . .venv/bin/activate
         echo "${{ github.workspace }}/.venv/bin" >> "$GITHUB_PATH"
         python -m pip install meson mako pyyaml packaging
-
-    - name: Cache cargo
-      uses: Swatinem/rust-cache@v2
-      with:
-        key: cargo-${{ runner.os }}-2
-    - name: Install rust packages
+    - name: Install bindgen
       shell: bash
-      run: cargo install --force bindgen-cli cbindgen
+      run: |
+        curl -L https://github.com/rust-lang/rust-bindgen/releases/download/v0.71.1/bindgen-cli-installer.sh | sh
+        sudo curl -L https://github.com/mozilla/cbindgen/releases/download/0.29.0/cbindgen-ubuntu22.04 -o /usr/bin/cbindgen
+        sudo chmod +x /usr/bin/cbindgen
     - name: Setup APT
       shell: bash
       run: |
