@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   find-tags:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     outputs:
       tags: ${{ steps.get_tags.outputs.tags }}
     steps:
