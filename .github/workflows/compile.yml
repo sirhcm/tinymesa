@@ -35,7 +35,7 @@ jobs:
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
   build-and-release:
     name: Build and release tinymesa for ${{ matrix.tag }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     needs: find-tags
     if: needs.find-tags.outputs.tags != '[]'
     strategy:
