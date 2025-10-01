@@ -47,7 +47,7 @@ runs:
       shell: bash
       run: |
         sudo apt -qq update || true
-        sudo apt-get -y --allow-unauthenticated --no-install-recommends install libllvm20 clang-20 lld-20 libdrm-dev libclc-20-dev libclang-20-dev llvm-20-dev libllvmspirvlib-20-dev
+        sudo apt-get -y --allow-unauthenticated --no-install-recommends install libllvm20 clang-20 lld-20 libdrm-dev libclc-20-dev libclang-20-dev llvm-20-dev
         sudo chown -R $USER:$USER /var/cache/apt/archives/
     - name: Install vulkan SDK
       shell: bash
@@ -65,6 +65,25 @@ runs:
         Libs: -L\${libdir} -lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link
         Cflags: -I\${includedir}
         EOF
+    - name: Cache libLLVMSPIRVLib
+      id: cache-libLLVMSPIRVLib
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/SPIRV-LLVM-Translator
+        key: libLLVMSPIRVLib-${{ runner.os }}
+    - name: Build libLLVMSPIRVLib
+      if: steps.cache-libLLVMSPIRVLib.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone --depth 1 --branch v20.1.0 https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git
+        mkdir SPIRV-LLVM-Translator/build && cd SPIRV-LLVM-Translator/build
+        cmake ..
+        make llvm-spirv -j`nproc`
+    - name: Install libLLVMSPIRVLib
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/SPIRV-LLVM-Translator/build
+        sudo make install
     - name: Build mesa
       shell: bash
       run: |
