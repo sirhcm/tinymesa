@@ -65,6 +65,11 @@ jobs:
         uses: ./.github/actions/compile
         with:
           mesa-tag: ${{ matrix.tag }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tinymesa-libs-${{ matrix-tag }}-${{ matrix.os }}
+          path: dist/
       - name: Stage artifacts
         shell: bash
         run: |
@@ -96,5 +101,5 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" artifacts/*/* --clobber=false
           else
-            awk -f release.awk meson.build | gh release create "$TAG" artifacts/* --title "${{ matrix.tag }}" -F -
+            awk -f release.awk meson.build | gh release create "$TAG" artifacts/*/* --title "${{ matrix.tag }}" -F -
           fi
