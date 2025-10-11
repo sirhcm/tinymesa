@@ -18,13 +18,19 @@ runs:
         . .venv/bin/activate
         echo "${{ github.workspace }}/.venv/bin" >> "$GITHUB_PATH"
         python -m pip install meson mako pyyaml packaging
-    - name: Install bindgen
+    - name: Install deps (macos)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: brew install bindgen cbindgen spirv-tools libdrm llvm@20 sirhcm/tinymesa/libclc@20 sirhcm/tinymesa/spirv-llvm-translator@20
+    - name: Install rust deps (linux)
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         curl -L https://github.com/rust-lang/rust-bindgen/releases/download/v0.71.1/bindgen-cli-installer.sh | sh
         sudo curl -L https://github.com/mozilla/cbindgen/releases/download/0.29.0/cbindgen-ubuntu22.04 -o /usr/bin/cbindgen
         sudo chmod +x /usr/bin/cbindgen
     - name: Setup APT
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         sudo chown -R $USER:$USER /var/cache/apt/archives
@@ -39,17 +45,20 @@ runs:
         path-exclude /usr/share/info/*
         EOF
     - name: Cache APT
+      if: runner.os == 'Linux'
       uses: actions/cache@v4
       with:
         path: /var/cache/apt/archives/
         key: apt-${{ runner.os }}-${{ env.APT_CACHE_VERSION }}
     - name: APT update + install
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         sudo apt -qq update || true
         sudo apt-get -y --allow-unauthenticated --no-install-recommends install libllvm20 clang-20 lld-20 libdrm-dev libclc-20-dev libclang-20-dev llvm-20-dev
         sudo chown -R $USER:$USER /var/cache/apt/archives/
-    - name: Install vulkan SDK
+    - name: Install vulkan SDK (linux)
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         curl -L https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C /usr --strip-components=2
@@ -66,13 +75,14 @@ runs:
         Cflags: -I\${includedir}
         EOF
     - name: Cache libLLVMSPIRVLib
+      if: runner.os == 'Linux'
       id: cache-libLLVMSPIRVLib
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/SPIRV-LLVM-Translator
         key: libLLVMSPIRVLib-${{ runner.os }}
     - name: Build libLLVMSPIRVLib
-      if: steps.cache-libLLVMSPIRVLib.outputs.cache-hit != 'true'
+      if: runner.os == 'Linux' && steps.cache-libLLVMSPIRVLib.outputs.cache-hit != 'true'
       shell: bash
       run: |
         git clone --depth 1 --branch v20.1.0 https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git
@@ -87,6 +97,7 @@ runs:
     - name: Build mesa
       shell: bash
       run: |
+        [[ "${{ runner.os }}" == "macOS" ]] && eval "$(brew shellenv)"
         git clone --depth 1 --branch ${{ inputs.mesa-tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
         cd ${{ github.workspace }}/mesa
         sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
