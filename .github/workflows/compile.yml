@@ -12,13 +12,14 @@ on:
       - 'meson.build'
   pull_request:
 
-permissions:
-  contents: write
-
 jobs:
   find-tags:
     name: Query mesa tags
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       tags: ${{ steps.get_tags.outputs.tags }}
     steps:
@@ -26,17 +27,29 @@ jobs:
         id: get_tags
         shell: bash
         run: |
-          TAGS=$( \
+          ALL_TAGS=$( \
             git ls-remote --tags --sort="v:refname" https://gitlab.freedesktop.org/mesa/mesa.git \
             | grep -o 'refs/tags/mesa-[0-9]\+\.[0-9]\+\.[0-9]\+$' \
             | sed 's,refs/tags/,,g' \
             | awk -F'[-.]' '$2 >= 25 { if ($4 > max_patch[$2 "." $3]) max_patch[$2 "." $3] = $4 } END { for (key in max_patch) print "mesa-" key "." max_patch[key] }' \
-            | sort -V \
-            | jq -R . | jq -cs .
+            | sort -V
           )
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
-  build-and-release:
-    name: Build and release ${{ matrix.tag }} on ${{ matrix.os }}
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            TAGS="$ALL_TAGS"
+          else
+            LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
+            if [[ -n "$LATEST" ]]; then
+              EXCLUDE_TAGS=$(gh release view "$LATEST" --json assets -q '.assets[].name' grep -o 'mesa-[0-9.]\+' | sort -V -u)
+              TAGS=$(comm -23 <(echo "$ALL_TAGS") <(echo "$EXCLUDE_TAGS"))
+            else
+              TAGS="$ALL_TAGS"
+            fi
+          fi
+
+          echo "tags=$(echo $TAGS | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+  build:
+    name: Build ${{ matrix.tag }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     needs: find-tags
     if: needs.find-tags.outputs.tags != '[]'
@@ -46,23 +59,40 @@ jobs:
         os: [ ubuntu-22.04, macos-14, macos-15 ]
         tag: ${{ fromJson(needs.find-tags.outputs.tags) }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Check for existing release
-        if: github.event_name != 'pull_request'
-        id: check_release
-        run: gh release view ${{ matrix.tag }}-${GITHUB_SHA::7}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
       - name: Build tinymesa
-        if: github.event_name == 'pull_request' || steps.check_release.outcome == 'failure'
         uses: ./.github/actions/compile
         with:
           mesa-tag: ${{ matrix.tag }}
-      - name: Create release
-        if: github.event_name != 'pull_request' && steps.check_release.outcome == 'failure'
-        run: awk -f release.awk meson.build | gh release create ${{ matrix.tag }}-${GITHUB_SHA::7} ${{ github.workspace }}/mesa/build/src/tinymesa/*.so --title "${{ matrix.tag }} at tinymesa:${GITHUB_SHA::7}" -F -
+      - name: Stage artifacts
+        shell: bash
+        run: |
+          mkdir dist
+          BUILD_DIR="${{ github.workspace/mesa/build/src/tinymesa"
+          find $BUILD_DIR -maxdepth 1 -type f -print0 | xargs -0 -n1 basename | while read -r f; do
+            mv "$BUILD_DIR/$f" "dist/${f/./-${{ matrix.tag }}-${{ runner.os }}-$(uname -m).}"
+          done
+  release:
+    name: Release tinymesa
+    runs-on: ubuntu-22.04
+    needs: build
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create/update release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+        shell: bash
+        run: |
+          TAG="tinymesa-${GITHUB_SHA::7}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" artifacts/*/* --clobber=false
+          else
+            awk -f release.awk meson.build | gh release create "$TAG" artifacts/* --title "${{ matrix.tag }}" -F -
+          fi
