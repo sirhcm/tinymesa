@@ -90,6 +90,7 @@ runs:
         cmake ..
         make llvm-spirv -j`nproc`
     - name: Install libLLVMSPIRVLib
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         cd ${{ github.workspace }}/SPIRV-LLVM-Translator/build
@@ -99,10 +100,12 @@ runs:
       run: |
         git clone --depth 1 --branch ${{ inputs.mesa-tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
         cd ${{ github.workspace }}/mesa
-        echo src/{compiler/meson.build,compiler/nir/meson.build,gallium/auxiliary/meson.build,nouveau/compiler/meson.build,util/meson.build} | xargs -n 1 sed -i '' '/gnu_symbol_visibility/d'
         if [[ "${{ runner.os }}" == "macOS" ]]; then
           eval "$(brew shellenv)"
           touch include/xf86drm.h
+          echo src/{compiler/meson.build,compiler/nir/meson.build,gallium/auxiliary/meson.build,nouveau/compiler/meson.build,util/meson.build} | xargs -n 1 sed -i '' '/gnu_symbol_visibility/d'
+        else
+          sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
         fi
         echo "subdir('tinymesa')" >> src/meson.build
         mkdir src/tinymesa
