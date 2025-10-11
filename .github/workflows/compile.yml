@@ -23,6 +23,8 @@ jobs:
     outputs:
       tags: ${{ steps.get_tags.outputs.tags }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Query mesa tags
         id: get_tags
         shell: bash
@@ -40,7 +42,7 @@ jobs:
           else
             LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
             if [[ -n "$LATEST" ]]; then
-              EXCLUDE_TAGS=$(gh release view "$LATEST" --json assets -q '.assets[].name' grep -o 'mesa-[0-9.]\+' | sort -V -u)
+              EXCLUDE_TAGS=$(gh release view "$LATEST" --json assets -q '.assets[].name' | grep -o 'mesa-[0-9.]\+' | sort -V -u || echo "")
               TAGS=$(comm -23 <(echo "$ALL_TAGS") <(echo "$EXCLUDE_TAGS"))
             else
               TAGS="$ALL_TAGS"
@@ -65,19 +67,19 @@ jobs:
         uses: ./.github/actions/compile
         with:
           mesa-tag: ${{ matrix.tag }}
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tinymesa-libs-${{ matrix.tag }}-${{ matrix.os }}
-          path: dist/
       - name: Stage artifacts
         shell: bash
         run: |
           mkdir dist
           BUILD_DIR="${{ github.workspace }}/mesa/build/src/tinymesa"
           find $BUILD_DIR -maxdepth 1 -type f -print0 | xargs -0 -n1 basename | while read -r f; do
-            mv "$BUILD_DIR/$f" "dist/${f/./-${{ matrix.tag }}-${{ runner.os }}-$(uname -m).}"
+            mv "$BUILD_DIR/$f" "dist/${f/./-${{ matrix.tag }}-${{ format('{0}-{1}', runner.os == 'macOS' && matrix.os || 'linux', runner.arch == 'X64' && 'amd64' || 'arm64') }}.}"
           done
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tinymesa-libs-${{ matrix.tag }}-${{ matrix.os }}
+          path: dist/
   release:
     name: Release tinymesa
     runs-on: ubuntu-22.04
@@ -98,8 +100,8 @@ jobs:
         shell: bash
         run: |
           TAG="tinymesa-${GITHUB_SHA::7}"
-          if gh release view "$TAG" >/dev/null 2>&1; then
+          if gh release view "$TAG"; then
             gh release upload "$TAG" artifacts/*/* --clobber=false
           else
-            awk -f release.awk meson.build | gh release create "$TAG" artifacts/*/* --title "${{ matrix.tag }}" -F -
+            awk -f release.awk meson.build | gh release create "$TAG" artifacts/*/* --title "$TAG" -F -
           fi
