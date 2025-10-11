@@ -36,14 +36,12 @@ jobs:
   build-and-release:
     name: Build and release tinymesa for ${{ matrix.tag }}
     runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-22.04, macos-14, macos-15 ]
     needs: find-tags
     if: needs.find-tags.outputs.tags != '[]'
     strategy:
       fail-fast: false
       matrix:
+        os: [ ubuntu-22.04, macos-14, macos-15 ]
         tag: ${{ fromJson(needs.find-tags.outputs.tags) }}
     steps:
       - name: Checkout repository
