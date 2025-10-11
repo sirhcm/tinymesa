@@ -21,7 +21,7 @@ runs:
     - name: Install deps (macos)
       if: runner.os == 'macOS'
       shell: bash
-      run: brew install bindgen cbindgen spirv-tools libdrm llvm@20 sirhcm/tinymesa/libclc@20 sirhcm/tinymesa/spirv-llvm-translator@20
+      run: brew install bindgen cbindgen spirv-tools glslang llvm@20 lld@20 sirhcm/tinymesa/libclc@20 sirhcm/tinymesa/spirv-llvm-translator@20
     - name: Install rust deps (linux)
       if: runner.os == 'Linux'
       shell: bash
@@ -97,18 +97,23 @@ runs:
     - name: Build mesa
       shell: bash
       run: |
-        [[ "${{ runner.os }}" == "macOS" ]] && eval "$(brew shellenv)"
         git clone --depth 1 --branch ${{ inputs.mesa-tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
         cd ${{ github.workspace }}/mesa
-        sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
+        echo src/{compiler/meson.build,compiler/nir/meson.build,gallium/auxiliary/meson.build,nouveau/compiler/meson.build,util/meson.build} | xargs -n 1 sed -i '' '/gnu_symbol_visibility/d'
+        if [[ "${{ runner.os }}" == "macOS" ]]; then
+          eval "$(brew shellenv)"
+          touch include/xf86drm.h
+        fi
         echo "subdir('tinymesa')" >> src/meson.build
         mkdir src/tinymesa
         cp ${{ github.workspace }}/meson.build src/tinymesa
         export CLANG_PATH=$(which clang-20)
-        meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms=[] -Dglx=disabled -Dvulkan-drivers=swrast,nouveau -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs=[]
-        ninja -C build src/tinymesa/libtinymesa.so src/tinymesa/libtinymesa_cpu.so
+        meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
+        EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
+        ninja -C build src/tinymesa/libtinymesa$EXT src/tinymesa/libtinymesa_cpu$EXT
     - name: Test loading with ctypes
       shell: bash
       run: |
         cd ${{ github.workspace }}/mesa/build/src/tinymesa
-        python3 -c "from ctypes import CDLL; CDLL('./libtinymesa.so'), CDLL('./libtinymesa_cpu.so')"
+        EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
+        python3 -c "from ctypes import CDLL; CDLL('./libtinymesa$EXT'), CDLL('./libtinymesa_cpu$EXT')"

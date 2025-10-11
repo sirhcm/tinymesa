@@ -11,9 +11,14 @@ lvp_symbols = [
   'lp_build_nir_soa',
 ]
 
+symbol_prefix = ''
+if host_machine.system() == 'darwin'
+  symbol_prefix = '_'
+endif
+
 lvp_link_args = []
 foreach sym : lvp_symbols
-  lvp_link_args += '-Wl,-u,' + sym
+  lvp_link_args += '-Wl,-u,' + symbol_prefix + sym
 endforeach
 
 nak_symbols = [
@@ -30,7 +35,7 @@ nak_symbols = [
 
 nak_link_args = []
 foreach sym : nak_symbols
-  nak_link_args += '-Wl,-u,' + sym
+  nak_link_args += '-Wl,-u,' + symbol_prefix + sym
 endforeach
 
 shared_library('tinymesa', link_whole : [ _libnir ], link_args : nak_link_args, dependencies : [ idep_nak ])
