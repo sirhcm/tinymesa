@@ -68,7 +68,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tinymesa-libs-${{ matrix-tag }}-${{ matrix.os }}
+          name: tinymesa-libs-${{ matrix.tag }}-${{ matrix.os }}
           path: dist/
       - name: Stage artifacts
         shell: bash
