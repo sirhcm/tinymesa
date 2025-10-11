@@ -47,7 +47,7 @@ jobs:
             fi
           fi
 
-          echo "tags=$(echo $TAGS | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+          echo "tags=$(echo $TAGS | jq -cR 'split(" ")')" >> "$GITHUB_OUTPUT"
   build:
     name: Build ${{ matrix.tag }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
