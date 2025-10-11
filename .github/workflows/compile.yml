@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   find-tags:
+    name: Query mesa tags
     runs-on: ubuntu-22.04
     outputs:
       tags: ${{ steps.get_tags.outputs.tags }}
@@ -34,7 +35,7 @@ jobs:
           )
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
   build-and-release:
-    name: Build and release tinymesa for ${{ matrix.tag }}
+    name: Build and release ${{ matrix.tag }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     needs: find-tags
     if: needs.find-tags.outputs.tags != '[]'
