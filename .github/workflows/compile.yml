@@ -10,6 +10,8 @@ on:
     paths:
       - '.github/**'
       - 'meson.build'
+    tags:
+      - '*'
   pull_request:
 
 jobs:
@@ -37,7 +39,7 @@ jobs:
             | sort -V
           )
 
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          if [[ "${{ github.event_name }}" == "pull_request" ]] || [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAGS="$ALL_TAGS"
           else
             LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
@@ -99,7 +101,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          TAG="tinymesa-${GITHUB_SHA::7}"
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${{ github.ref_name }}"
+          else
+            EXACT_TAG=$(git describe --tags --exact-match ${{ github.sha }} 2>/dev/null || echo "")
+            if [[ -n "$EXACT_TAG" ]]; then
+              exit 0
+            fi
+            TAG="tinymesa-${GITHUB_SHA::7}"
+          fi
+
           if gh release view "$TAG"; then
             gh release upload "$TAG" artifacts/*/* --clobber=false
           else
