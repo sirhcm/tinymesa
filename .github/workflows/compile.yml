@@ -35,7 +35,7 @@ jobs:
             git ls-remote --tags --sort="v:refname" https://gitlab.freedesktop.org/mesa/mesa.git \
             | grep -o 'refs/tags/mesa-[0-9]\+\.[0-9]\+\.[0-9]\+$' \
             | sed 's,refs/tags/,,g' \
-            | awk -F'[-.]' '$2 >= 25 { if ($4 > max_patch[$2 "." $3]) max_patch[$2 "." $3] = $4 } END { for (key in max_patch) print "mesa-" key "." max_patch[key] }' \
+            | awk -F'[-.]' '$2 >= 25 { max_patch[$2 "." $3] = $4 } END { for (key in max_patch) print "mesa-" key "." max_patch[key] }' \
             | sort -V
           )
 
