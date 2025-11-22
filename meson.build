@@ -44,6 +44,7 @@ ir3_symbols = [
   'ir3_nir_post_finalize',
   'ir3_shader_assemble',
   'ir3_isa_disasm',
+  'fd_dev_info',
 ]
 
 ir3_link_args = []
