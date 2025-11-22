@@ -1,0 +1,35 @@
+From: Christopher Milan <chrismilan@ucla.edu>
+Date: Sat, 22 Nov 2025 17:30:21 +0000
+Subject: [PATCH] ir3: disable disk cache on mac
+
+MacOS does not support build_id_find_nhdr_for_addr.
+
+---
+ src/freedreno/ir3/ir3_disk_cache.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/freedreno/ir3/ir3_disk_cache.c b/src/freedreno/ir3/ir3_disk_cache.c
+index 70126f6..7ce2951 100644
+--- a/src/freedreno/ir3/ir3_disk_cache.c
++++ b/src/freedreno/ir3/ir3_disk_cache.c
+@@ -30,6 +30,9 @@
+ void
+ ir3_disk_cache_init(struct ir3_compiler *compiler)
+ {
++#ifdef __APPLE__
++   assert(!"disk cache unsupported");
++#else
+    if (ir3_shader_debug & IR3_DBG_NOCACHE)
+       return;
+ 
+@@ -55,6 +58,7 @@ ir3_disk_cache_init(struct ir3_compiler *compiler)
+ 
+    uint64_t driver_flags = ir3_shader_debug_hash_key();
+    compiler->disk_cache = disk_cache_create(renderer, timestamp, driver_flags);
++#endif
+ }
+ 
+ void
+-- 
+2.43.0
+

@@ -38,6 +38,20 @@ foreach sym : nak_symbols
   nak_link_args += '-Wl,-u,' + symbol_prefix + sym
 endforeach
 
-shared_library('tinymesa', link_whole : [ _libnir ], link_args : nak_link_args, dependencies : [ idep_nak ])
-shared_library('tinymesa_cpu', link_whole : [ _libnir ], link_args : lvp_link_args+nak_link_args, link_with : [ libgallium ], dependencies : [ idep_nak ])
+ir3_symbols = [
+  'ir3_compile_shader_nir',
+  'ir3_get_compiler_options',
+  'ir3_nir_post_finalize',
+  'ir3_shader_assemble',
+  'ir3_isa_disasm',
+  'fd_dev_info',
+]
+
+ir3_link_args = []
+foreach sym : ir3_symbols
+  ir3_link_args += '-Wl,-u,' + symbol_prefix + sym
+endforeach
+
+shared_library('tinymesa', link_whole : [ _libnir ], link_args : nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common ], dependencies : [ idep_nak ])
+shared_library('tinymesa_cpu', link_whole : [ _libnir ], link_args : lvp_link_args+nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common, libgallium ], dependencies : [ idep_nak ])
 

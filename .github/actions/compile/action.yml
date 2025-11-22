@@ -21,14 +21,7 @@ runs:
     - name: Install deps (macos)
       if: runner.os == 'macOS'
       shell: bash
-      run: brew install bindgen cbindgen spirv-tools glslang llvm@20 lld@20 sirhcm/tinymesa/libclc@20 sirhcm/tinymesa/spirv-llvm-translator@20
-    - name: Install rust deps (linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        curl -L https://github.com/rust-lang/rust-bindgen/releases/download/v0.71.1/bindgen-cli-installer.sh | sh
-        sudo curl -L https://github.com/mozilla/cbindgen/releases/download/0.29.0/cbindgen-ubuntu22.04 -o /usr/bin/cbindgen
-        sudo chmod +x /usr/bin/cbindgen
+      run: brew install bison bindgen cbindgen spirv-tools glslang llvm@20 lld@20 sirhcm/tinymesa/libclc@20 sirhcm/tinymesa/spirv-llvm-translator@20
     - name: Setup APT
       if: runner.os == 'Linux'
       shell: bash
@@ -49,7 +42,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: /var/cache/apt/archives/
-        key: apt-${{ runner.os }}-${{ env.APT_CACHE_VERSION }}
+        key: apt-${{ runner.os }}-${{ runner.arch }}-${{ env.APT_CACHE_VERSION }}
     - name: APT update + install
       if: runner.os == 'Linux'
       shell: bash
@@ -57,30 +50,49 @@ runs:
         sudo apt -qq update || true
         sudo apt-get -y --allow-unauthenticated --no-install-recommends install libllvm20 clang-20 lld-20 libdrm-dev libclc-20-dev libclang-20-dev llvm-20-dev
         sudo chown -R $USER:$USER /var/cache/apt/archives/
-    - name: Install vulkan SDK (linux)
-      if: runner.os == 'Linux'
+    - name: Install vulkan SDK (linux-x86)
+      if: runner.os == 'Linux' && runner.arch == 'X64'
       shell: bash
       run: |
-        curl -L https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C /usr --strip-components=2
+        curl -fL https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C /usr --strip-components=2
         sudo tee /usr/lib/pkgconfig/SPIRV-Tools.pc <<EOF
         prefix=/usr
         libdir=\${prefix}/lib
         includedir=\${prefix}/include
-
         Name: SPIRV-Tools
         Description: Tools for SPIR-V
         Version: 2025.3
-
         Libs: -L\${libdir} -lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link
         Cflags: -I\${includedir}
         EOF
+    - name: Cache vulkan SDK (linux-arm)
+      if: runner.os == 'Linux' && runner.arch == 'ARM64'
+      id: cache-vulkan-sdk
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/vulkan-sdk
+        key: vulkan-sdk-${{ runner.os }}-${{ runner.arch }}
+    - name: Build vulkan SDK (linux-arm)
+      if: runner.os == 'Linux' && runner.arch == 'ARM64' && steps.cache-vulkan-sdk.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir ${{ github.workspace }}/vulkan-sdk
+        curl -fL https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C ${{ github.workspace }}/vulkan-sdk --strip-components=1
+        cd ${{ github.workspace }}/vulkan-sdk
+        ./vulkansdk --maxjobs --no-deps glslang spirvtools
+    - name: Install vulkan SDK (linux-arm)
+      if: runner.os == 'Linux' && runner.arch == 'ARM64'
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/vulkan-sdk
+        sudo cp -ru aarch64/* /usr/ && sudo ldconfig
     - name: Cache libLLVMSPIRVLib
       if: runner.os == 'Linux'
       id: cache-libLLVMSPIRVLib
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/SPIRV-LLVM-Translator
-        key: libLLVMSPIRVLib-${{ runner.os }}
+        key: libLLVMSPIRVLib-${{ runner.os }}-${{ runner.arch }}
     - name: Build libLLVMSPIRVLib
       if: runner.os == 'Linux' && steps.cache-libLLVMSPIRVLib.outputs.cache-hit != 'true'
       shell: bash
@@ -95,24 +107,31 @@ runs:
       run: |
         cd ${{ github.workspace }}/SPIRV-LLVM-Translator/build
         sudo make install
-    - name: Build mesa
+    - name: Clone mesa
+      shell: bash
+      run: git clone --depth 1 --branch ${{ inputs.mesa-tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
+    - name: Patch mesa
       shell: bash
       run: |
-        git clone --depth 1 --branch ${{ inputs.mesa-tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
         cd ${{ github.workspace }}/mesa
+        for patch in ../patches/*.patch; do
+          patch -p1 --fuzz=3 < "$patch"
+        done
         if [[ "${{ runner.os }}" == "macOS" ]]; then
           eval "$(brew shellenv)"
           touch include/xf86drm.h
-          echo src/{compiler/meson.build,compiler/nir/meson.build,gallium/auxiliary/meson.build,nouveau/compiler/meson.build,util/meson.build} | xargs -n 1 sed -i '' '/gnu_symbol_visibility/d'
-          export PATH="/opt/homebrew/opt/llvm@20/bin:${{ github.workspace }}/.venv/bin:$PATH"
-        else
-          sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build
+          echo "PATH=/opt/homebrew/opt/bison/bin:/opt/homebrew/opt/llvm@20/bin:$PATH" >> $GITHUB_ENV
         fi
+        echo src/{compiler,compiler/nir,gallium/auxiliary,nouveau/compiler,util,freedreno/ir3,freedreno/common}/meson.build | xargs -n 1 perl -ni -e 'print unless /gnu_symbol_visibility/'
         echo "subdir('tinymesa')" >> src/meson.build
         mkdir src/tinymesa
         cp ${{ github.workspace }}/meson.build src/tinymesa
+    - name: Build mesa
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/mesa
         export CLANG_PATH=$(which clang-20)
-        meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
+        meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau,freedreno -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
         EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
         ninja -C build src/tinymesa/libtinymesa$EXT src/tinymesa/libtinymesa_cpu$EXT
     - name: Test loading with ctypes
