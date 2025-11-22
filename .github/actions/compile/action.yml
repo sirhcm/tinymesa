@@ -112,7 +112,7 @@ runs:
         mkdir src/tinymesa
         cp ${{ github.workspace }}/meson.build src/tinymesa
         export CLANG_PATH=$(which clang-20)
-        meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
+        meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau,freedreno -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
         EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
         ninja -C build src/tinymesa/libtinymesa$EXT src/tinymesa/libtinymesa_cpu$EXT
     - name: Test loading with ctypes
