@@ -26,7 +26,7 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        cargo binstall bindgen-cli
+        cargo install bindgen-cli
         sudo curl -fL "https://github.com/mozilla/cbindgen/releases/download/0.29.0/cbindgen-ubuntu22.04${{ contains(runner.arch, 'ARM') && '-aarch64' || '' }}" -o /usr/bin/cbindgen
         sudo chmod +x /usr/bin/cbindgen
     - name: Setup APT
