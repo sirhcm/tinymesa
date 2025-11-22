@@ -55,7 +55,7 @@ runs:
       shell: bash
       run: |
         sudo apt -qq update || true
-        sudo apt-get -y --allow-unauthenticated --no-install-recommends install libllvm20 clang-20 lld-20 libdrm-dev libclc-20-dev libclang-20-dev llvm-20-dev spirv-tools vulkan-tools
+        sudo apt-get -y --allow-unauthenticated --no-install-recommends install libllvm20 clang-20 lld-20 libdrm-dev libclc-20-dev libclang-20-dev llvm-20-dev spirv-tools vulkan-tools glslang-tools
         sudo chown -R $USER:$USER /var/cache/apt/archives/
     - name: Cache libLLVMSPIRVLib
       if: runner.os == 'Linux'
