@@ -83,6 +83,7 @@ runs:
       if: runner.os == 'Linux' && runner.arch == 'ARM64' && steps.cache-vulkan-sdk.outputs.cache-hit != 'true'
       shell: bash
       run: |
+        mkdir ${{ github.workspace }}/vulkan-sdk
         curl -fL https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C ${{ github.workspace }}/vulkan-sdk --strip-components=1
         cd ${{ github.workspace }}/vulkan-sdk
         ./vulkansdk cd ${{ github.workspace }}/vulkan-sdk --maxjobs --no-deps glslang spirvtools
