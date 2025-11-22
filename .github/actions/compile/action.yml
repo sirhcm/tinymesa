@@ -21,7 +21,7 @@ runs:
     - name: Install deps (macos)
       if: runner.os == 'macOS'
       shell: bash
-      run: brew install bindgen cbindgen spirv-tools glslang llvm@20 lld@20 sirhcm/tinymesa/libclc@20 sirhcm/tinymesa/spirv-llvm-translator@20
+      run: brew install bison bindgen cbindgen spirv-tools glslang llvm@20 lld@20 sirhcm/tinymesa/libclc@20 sirhcm/tinymesa/spirv-llvm-translator@20
     - name: Install rust deps (linux)
       if: runner.os == 'Linux'
       shell: bash
@@ -104,7 +104,7 @@ runs:
           eval "$(brew shellenv)"
           touch include/xf86drm.h
           echo src/{compiler/meson.build,compiler/nir/meson.build,gallium/auxiliary/meson.build,nouveau/compiler/meson.build,util/meson.build,freedreno/ir3/meson.build} | xargs -n 1 sed -i '' '/gnu_symbol_visibility/d'
-          export PATH="/opt/homebrew/opt/llvm@20/bin:${{ github.workspace }}/.venv/bin:$PATH"
+          export PATH="/opt/homebrew/opt/bison/bin:/opt/homebrew/opt/llvm@20/bin:${{ github.workspace }}/.venv/bin:$PATH"
         else
           sed -i '/gnu_symbol_visibility/d' src/compiler/meson.build src/compiler/nir/meson.build src/gallium/auxiliary/meson.build src/nouveau/compiler/meson.build src/util/meson.build src/freedreno/ir3/meson.build
         fi
