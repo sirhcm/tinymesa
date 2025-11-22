@@ -9,7 +9,7 @@ MacOS does not support build_id_find_nhdr_for_addr.
  1 file changed, 4 insertions(+)
 
 diff --git a/src/freedreno/ir3/ir3_disk_cache.c b/src/freedreno/ir3/ir3_disk_cache.c
-index 70126f6..573ef80 100644
+index 70126f6..7ce2951 100644
 --- a/src/freedreno/ir3/ir3_disk_cache.c
 +++ b/src/freedreno/ir3/ir3_disk_cache.c
 @@ -30,6 +30,9 @@
@@ -17,7 +17,7 @@ index 70126f6..573ef80 100644
  ir3_disk_cache_init(struct ir3_compiler *compiler)
  {
 +#ifdef __APPLE__
-+   unreachable("disk cache unsupported");
++   assert(!"disk cache unsupported");
 +#else
     if (ir3_shader_debug & IR3_DBG_NOCACHE)
        return;
