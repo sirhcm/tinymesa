@@ -55,8 +55,43 @@ runs:
       shell: bash
       run: |
         sudo apt -qq update || true
-        sudo apt-get -y --allow-unauthenticated --no-install-recommends install libllvm20 clang-20 lld-20 libdrm-dev libclc-20-dev libclang-20-dev llvm-20-dev spirv-tools vulkan-tools glslang-tools
+        sudo apt-get -y --allow-unauthenticated --no-install-recommends install libllvm20 clang-20 lld-20 libdrm-dev libclc-20-dev libclang-20-dev llvm-20-dev
         sudo chown -R $USER:$USER /var/cache/apt/archives/
+    - name: Install vulkan SDK (linux-x86)
+      if: runner.os == 'Linux' && runner.arch == 'X64'
+      shell: bash
+      run: |
+        curl -fL https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C /usr --strip-components=2
+        sudo tee /usr/lib/pkgconfig/SPIRV-Tools.pc <<EOF
+        prefix=/usr
+        libdir=\${prefix}/lib
+        includedir=\${prefix}/include
+        Name: SPIRV-Tools
+        Description: Tools for SPIR-V
+        Version: 2025.3
+        Libs: -L\${libdir} -lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link
+        Cflags: -I\${includedir}
+        EOF
+    - name: Cache vulkan SDK (linux-arm)
+      if: runner.os == 'Linux' && runner.arch == 'ARM64'
+      id: cache-vulkan-sdk
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/vulkan-sdk
+        key: vulkan-sdk-${{ runner.os }}-${{ runner.arch }}
+    - name: Build vulkan SDK (linux-arm)
+      if: runner.os == 'Linux' && runner.arch == 'ARM64' && steps.cache-vulkan-sdk.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        curl -fL //sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C ${{ github.workspace }}/vulkan-sdk --strip-components=1
+        cd ${{ github.workspace }}/vulkan-sdk
+        ./vulkansdk cd ${{ github.workspace }}/vulkan-sdk --maxjobs --no-deps glslang spirvtools
+    - name: Install vulkan SDK (linux-arm)
+      if: runner.os == 'Linux' && runner.arch == 'ARM64'
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/vulkan-sdk
+        sudo cp -ru aarch64/* /usr/ && sudo ldconfig
     - name: Cache libLLVMSPIRVLib
       if: runner.os == 'Linux'
       id: cache-libLLVMSPIRVLib
