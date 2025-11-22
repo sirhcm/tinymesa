@@ -26,8 +26,8 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        curl -L https://github.com/rust-lang/rust-bindgen/releases/download/v0.71.1/bindgen-cli-installer.sh | sh
-        sudo curl -L https://github.com/mozilla/cbindgen/releases/download/0.29.0/cbindgen-ubuntu22.04 -o /usr/bin/cbindgen
+        cargo binstall bindgen-cli
+        sudo curl -fL "https://github.com/mozilla/cbindgen/releases/download/0.29.0/cbindgen-ubuntu22.04${{ contains(runner.arch, 'ARM') && '-aarch64' || '' }}" -o /usr/bin/cbindgen
         sudo chmod +x /usr/bin/cbindgen
     - name: Setup APT
       if: runner.os == 'Linux'
@@ -61,7 +61,7 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        curl -L https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C /usr --strip-components=2
+        curl -fL https://sdk.lunarg.com/sdk/download/1.4.321.1/linux/vulkansdk-linux-x86_64-1.4.321.1.tar.xz | sudo tar -Jxf - -C /usr --strip-components=2
         sudo tee /usr/lib/pkgconfig/SPIRV-Tools.pc <<EOF
         prefix=/usr
         libdir=\${prefix}/lib
