@@ -41,7 +41,6 @@ endforeach
 ir3_symbols = [
   'ir3_compile_shader_nir',
   'ir3_get_compiler_options',
-  'ir3_nir_lower_io_vars_to_temporaries',
   'ir3_nir_post_finalize',
   'ir3_shader_assemble',
   'ir3_isa_disasm',
