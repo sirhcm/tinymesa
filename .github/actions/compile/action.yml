@@ -49,7 +49,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: /var/cache/apt/archives/
-        key: apt-${{ runner.os }}-${{ env.APT_CACHE_VERSION }}
+        key: apt-${{ runner.os }}-${{ runner.arch }}-${{ env.APT_CACHE_VERSION }}
     - name: APT update + install
       if: runner.os == 'Linux'
       shell: bash
@@ -80,7 +80,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/SPIRV-LLVM-Translator
-        key: libLLVMSPIRVLib-${{ runner.os }}
+        key: libLLVMSPIRVLib-${{ runner.os }}-${{ runner.arch }}
     - name: Build libLLVMSPIRVLib
       if: runner.os == 'Linux' && steps.cache-libLLVMSPIRVLib.outputs.cache-hit != 'true'
       shell: bash
