@@ -1,6 +1,11 @@
 # tinymesa
 
-provides a subset of mesa's `libvulkan` with vastly fewer dependencies.
+Provides a subset of mesa's compiler infrastructure with vastly fewer dependencies.
+
+Supports the following targets:
+  - Kepler and later NVIDIA GPUs (via NAK)
+  - Adreno a3xx and newer (via IR3)
+  - LLVM (via LLVMpipe)
 
 ### mesa:
 ```
@@ -41,7 +46,9 @@ libvulkan_lvp.so (interpreter => None)
 ### tinymesa:
 ```
 $ lddtree libtinymesa.so
-libtinymesa.so (interpreter => None)
+libtinymesa-mesa-25.2.7-linux-amd64.so (interpreter => None)
+    libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1
+    libzstd.so.1 => /lib/x86_64-linux-gnu/libzstd.so.1
     libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6
     libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1
     libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6
@@ -49,16 +56,15 @@ libtinymesa.so (interpreter => None)
 ```
 ### tinymesa (with LLVMpipe support):
 ```
-$ lddtree libtinymesa_cpu.so
 libtinymesa_cpu.so (interpreter => None)
+    libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1
+    libzstd.so.1 => /lib/x86_64-linux-gnu/libzstd.so.1
     libLLVM.so.20.1 => /lib/x86_64-linux-gnu/libLLVM.so.20.1
         libffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8
         libedit.so.2 => /lib/x86_64-linux-gnu/libedit.so.2
             libtinfo.so.6 => /lib/x86_64-linux-gnu/libtinfo.so.6
             libbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0
                 libmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0
-        libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1
-        libzstd.so.1 => /lib/x86_64-linux-gnu/libzstd.so.1
         libxml2.so.2 => /lib/x86_64-linux-gnu/libxml2.so.2
             libicuuc.so.74 => /lib/x86_64-linux-gnu/libicuuc.so.74
                 libicudata.so.74 => /lib/x86_64-linux-gnu/libicudata.so.74
@@ -70,10 +76,9 @@ libtinymesa_cpu.so (interpreter => None)
     ld-linux-x86-64.so.2 => /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
 ```
 
-`libtinymesa.so` contains all symbols from `libnir`, and a subset of symbols
-from `libnak` (see release notes for a list). `libtinymesa_cpu.so` contains
-all these symbols, but in addition, a subset of symbols from `libgallium`
+`libtinymesa.so` contains all symbols from `nir`, and a subset of symbols
+from `nak` and `freedreno` (see release notes for a list). `libtinymesa_cpu.so` contains
+all these symbols, but in addition, a subset of symbols from `gallium`
 (see release notes), and as a result depends on LLVM-20.
 
 Builds are automatically generated upon new releases of mesa (checked daily).
-
