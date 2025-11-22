@@ -22,13 +22,6 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: brew install bison bindgen cbindgen spirv-tools glslang llvm@20 lld@20 sirhcm/tinymesa/libclc@20 sirhcm/tinymesa/spirv-llvm-translator@20
-    - name: Install rust deps (linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        cargo install bindgen-cli
-        sudo curl -fL "https://github.com/mozilla/cbindgen/releases/download/0.29.0/cbindgen-ubuntu22.04${{ contains(runner.arch, 'ARM') && '-aarch64' || '' }}" -o /usr/bin/cbindgen
-        sudo chmod +x /usr/bin/cbindgen
     - name: Setup APT
       if: runner.os == 'Linux'
       shell: bash
