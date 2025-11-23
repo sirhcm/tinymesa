@@ -4,7 +4,7 @@ dumbgallium = custom_target('dumbgallium',
   input : gallium_lib,
   output : 'dumbgallium.a',
   command : ['cp', '@INPUT@', '@OUTPUT@']
-]
+)
 
 lvp_symbols = [
   'gallivm_create',
