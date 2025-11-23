@@ -1,3 +1,11 @@
+# meson is too smart by half, and wants to pull in all of libgallium for tinylvp
+gallium_lib = libgallium
+dumbgallium = custom_target('dumbgallium',
+  input : gallium_lib,
+  output : 'dumbgallium.a',
+  command : ['cp', '@INPUT@', '@OUTPUT@']
+]
+
 lvp_symbols = [
   'gallivm_create',
   'gallivm_destroy',
@@ -53,5 +61,4 @@ foreach sym : ir3_symbols
 endforeach
 
 tm = shared_library('tinymesa', link_whole : [ _libnir ], link_args : nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common ], dependencies : [ idep_nak ])
-shared_library('tinylvp', link_args : lvp_link_args, link_with : [ libgallium, tm ])
-
+shared_library('tinylvp', link_args : lvp_link_args, link_with : tm, link_depends : dumbgallium, objects : dumbgallium)
