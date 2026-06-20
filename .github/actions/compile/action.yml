@@ -114,7 +114,7 @@ runs:
       shell: bash
       run: |
         cd ${{ github.workspace }}/mesa
-        ../apply_patches.py ${{ inputs.mesa_tag }}
+        ../apply_patches.py ${{ inputs.mesa-tag }}
         if [[ "${{ runner.os }}" == "macOS" ]]; then
           eval "$(brew shellenv)"
           touch include/xf86drm.h
