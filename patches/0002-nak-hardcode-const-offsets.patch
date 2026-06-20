@@ -1,0 +1,32 @@
+From: Christopher Milan <chrismilan@ucla.edu>
+Date: Fri, 19 Jun 2026 18:13:03 -0700
+Subject: [PATCH] nak: hardcode const offsets
+Mesa-Version: >=26.1
+
+NAK doesn't depend on NVK
+
+---
+ src/nouveau/compiler/nak_private.h | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/src/nouveau/compiler/nak_private.h b/src/nouveau/compiler/nak_private.h
+index 588eb897eb4..dbaf9c340ae 100644
+--- a/src/nouveau/compiler/nak_private.h
++++ b/src/nouveau/compiler/nak_private.h
+@@ -347,11 +347,8 @@ enum nak_fs_out {
+ static inline const struct nak_constant_offset_info*
+ nak_const_offsets(const struct nak_compiler* nak, bool is_graphics)
+ {
+-   if (nak->sm >= 75 && is_graphics) {
+-      return &nak_const_offsets_turing_graphics;
+-   } else {
+-      return &nak_const_offsets_base;
+-   }
++   static const struct nak_constant_offset_info base = {};
++   return &base;
+ }
+ 
+ bool nak_nir_rematerialize_load_const(nir_shader *nir);
+-- 
+2.52.0
+
