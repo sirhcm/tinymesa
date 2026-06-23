@@ -52,6 +52,5 @@ foreach sym : ir3_symbols
   ir3_link_args += '-Wl,-u,' + symbol_prefix + sym
 endforeach
 
-shared_library('tinymesa', link_whole : [ _libnir ], link_args : nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common ], dependencies : [ idep_nak ])
-shared_library('tinymesa_cpu', link_whole : [ _libnir ], link_args : lvp_link_args+nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common, libgallium ], dependencies : [ idep_nak ])
-
+tm = shared_library('tinymesa', link_whole : [ _libnir ], link_args : nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common ], dependencies : [ idep_nak ])
+shared_library('tinylvp', link_args : lvp_link_args + [ libgallium.full_path() ], link_with : [ tm, _libmesa_util ], link_depends : libgallium, dependencies : [ dep_llvm ])

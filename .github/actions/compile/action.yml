@@ -131,10 +131,10 @@ runs:
         export CLANG_PATH=$(which clang-20)
         meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau,freedreno -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
         EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
-        ninja -C build src/tinymesa/libtinymesa$EXT src/tinymesa/libtinymesa_cpu$EXT
+        ninja -C build src/tinymesa/libtinymesa$EXT src/tinymesa/libtinylvp$EXT
     - name: Test loading with ctypes
       shell: bash
       run: |
         cd ${{ github.workspace }}/mesa/build/src/tinymesa
         EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
-        python3 -c "from ctypes import CDLL; CDLL('./libtinymesa$EXT'), CDLL('./libtinymesa_cpu$EXT')"
+        python3 -c "from ctypes import CDLL; CDLL('./libtinymesa$EXT'), CDLL('./libtinylvp$EXT')"
