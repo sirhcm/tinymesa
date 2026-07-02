@@ -15,43 +15,6 @@ on:
   pull_request:
 
 jobs:
-  find-tags:
-    name: Query mesa tags
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: read
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    outputs:
-      tags: ${{ steps.get_tags.outputs.tags }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Query mesa tags
-        id: get_tags
-        shell: bash
-        run: |
-          ALL_TAGS=$( \
-            git ls-remote --tags --sort="v:refname" https://gitlab.freedesktop.org/mesa/mesa.git \
-            | grep -o 'refs/tags/mesa-[0-9]\+\.[0-9]\+\.[0-9]\+$' \
-            | sed 's,refs/tags/,,g' \
-            | awk -F'[-.]' '$2 >= 25 { max_patch[$2 "." $3] = $4 } END { for (key in max_patch) print "mesa-" key "." max_patch[key] }' \
-            | sort -V
-          )
-
-          if [[ "${{ github.event_name }}" == "pull_request" ]] || [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            TAGS="$ALL_TAGS"
-          else
-            LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
-            if [[ -n "$LATEST" ]]; then
-              EXCLUDE_TAGS=$(gh release view "$LATEST" --json assets -q '.assets[].name' | grep -o 'mesa-[0-9.]\+' | sort -V -u || echo "")
-              TAGS=$(comm -23 <(echo "$ALL_TAGS") <(echo "$EXCLUDE_TAGS"))
-            else
-              TAGS="$ALL_TAGS"
-            fi
-          fi
-
-          echo "tags=$(echo $TAGS | jq -cR 'split(" ")')" >> "$GITHUB_OUTPUT"
   build:
     name: Build ${{ matrix.tag }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -60,15 +23,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-22.04, ubuntu-22.04-arm, macos-14, macos-15, macos-26 ]
-        tag: ${{ fromJson(needs.find-tags.outputs.tags) }}
+        os: [ ubuntu-22.04, ubuntu-22.04-arm, macos-14 ]
+        tag: [ mesa-25.2.7 ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Build tinymesa
+      - name: Setup tinymesa
         uses: ./.github/actions/compile
-        with:
-          mesa-tag: ${{ matrix.tag }}
+      - name: Clone mesa
+        run: git clone --depth 1 --branch ${{ matrix.tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
+      - name: Patch mesa
+        run: ./apply_patches.py ${{ github.workspace }}/mesa ${{ matrix.tag }}
+      - name: Build mesa
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/mesa
+          export CLANG_PATH=$(which clang-20)
+          meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau,freedreno -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
+          EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
+          ninja -C build src/tinymesa/libtinymesa$EXT src/tinymesa/libtinymesa_cpu$EXT
+      - name: Build wheel
+        run: ./build_wheel.py ${{ github.workspace }}/mesa/src/tinymesa/libtinymesa${{ runner.os == 'macOS' && '.dylib' || '.so' }}
+      - name: Test loading with ctypes
+        run: |
+          pip install dist/*.whl
+          python3 -c "from ctypes import CDLL; from tinymesa import libtinymesa, libtinymesa_cpu; CDLL(libtinymesa).glsl_type_singleton_init_or_ref(), CDLL(libtinymesa_cpu).glsl_type_singleton_init_or_ref()"
       - name: Stage artifacts
         shell: bash
         run: |
@@ -80,7 +59,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tinymesa-libs-${{ matrix.tag }}-${{ matrix.os }}
+          name: tinymesa-whl-${{ matrix.tag }}-${{ matrix.os }}
           path: dist/
   release:
     name: Release tinymesa
