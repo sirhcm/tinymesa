@@ -40,6 +40,11 @@ jobs:
           meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau,freedreno -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
           EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
           ninja -C build src/tinymesa/libtinymesa$EXT src/tinymesa/libtinymesa_cpu$EXT
+      - name: Polyfill glibc
+        if: runner.os == 'Linux'
+        run: |
+          # can't go earlier than 2.32 because of __libc_single_threaded@GLIBC_2.32
+          polyfill-glibc --target-glibc=2.32 ${{ github.workspace }}/mesa/build/src/tinymesa/libtinymesa*.so
       - name: Build wheel
         run: |
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
@@ -47,7 +52,10 @@ jobs:
           else
             VERSION_ARG=(--sha "${GITHUB_SHA::7}")
           fi
-          ./build_wheel.py "${VERSION_ARG[@]}" ${{ matrix.tag }} ${{ github.workspace }}/mesa/build/src/tinymesa/libtinymesa*${{ runner.os == 'macOS' && '.dylib' || '.so' }}
+
+          ./build_wheel.py "${VERSION_ARG[@]}" \
+            --platform ${{ matrix.os == 'ubuntu-22.04' && 'manylinux_2_32_x86_64' || matrix.os == 'ubuntu-22.04-arm' && 'manylinux_2_32_aarch64' || 'macosx_14_0_arm64' }} \
+            ${{ matrix.tag }} ${{ github.workspace }}/mesa/build/src/tinymesa/libtinymesa*${{ runner.os == 'macOS' && '.dylib' || '.so' }}
       - name: Test loading with ctypes
         run: |
           pip install dist/*.whl
