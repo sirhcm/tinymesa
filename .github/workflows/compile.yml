@@ -46,14 +46,6 @@ jobs:
         run: |
           pip install dist/*.whl
           python3 -c "from ctypes import CDLL; from tinymesa import libtinymesa, libtinymesa_cpu; CDLL(libtinymesa).glsl_type_singleton_init_or_ref(), CDLL(libtinymesa_cpu).glsl_type_singleton_init_or_ref()"
-      - name: Stage artifacts
-        shell: bash
-        run: |
-          mkdir dist
-          BUILD_DIR="${{ github.workspace }}/mesa/build/src/tinymesa"
-          find $BUILD_DIR -maxdepth 1 -type f -print0 | xargs -0 -n1 basename | while read -r f; do
-            mv "$BUILD_DIR/$f" "dist/${f/./-${{ matrix.tag }}-${{ format('{0}-{1}', runner.os == 'macOS' && matrix.os || 'linux', runner.arch == 'X64' && 'amd64' || 'arm64') }}.}"
-          done
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
