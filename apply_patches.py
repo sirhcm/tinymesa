@@ -22,4 +22,4 @@ for p in [mesa_dir / "src" / s / "meson.build" for s in ["compiler", "compiler/n
 with (mesa_dir / "src/meson.build").open("a") as f: f.write("subdir('tinymesa')\n")
 
 (mesa_dir / "src/tinymesa").mkdir(exist_ok=True)
-shutil.copy(repo / "meson.build", mesa_dir / "src/tinymesa/meson.build")
+shutil.copy(pathlib.Path(__file__).parent / "meson.build", mesa_dir / "src/tinymesa/meson.build")
