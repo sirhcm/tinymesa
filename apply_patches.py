@@ -16,7 +16,7 @@ for p in (pathlib.Path(__file__).parent / 'patches').iterdir():
 
 if platform.system() == "Darwin": (mesa_dir / "include/xf86drm.h").touch()
 
-for p in [mesa_dir / "src" / s / "meson.build" for s in ["compiler", "compiler/nir", "gallium/auxiliary", "nouveau/compiler", "src/util", "src/freedreno/ir3", "src/freedreno/common"]]:
+for p in [mesa_dir / "src" / s / "meson.build" for s in ["compiler", "compiler/nir", "gallium/auxiliary", "nouveau/compiler", "util", "freedreno/ir3", "freedreno/common"]]:
   p.write_text("\n".join(filter(lambda l: "gnu_symbol_visibility" not in l, p.read_text().splitlines())))
 
 with (mesa_dir / "src/meson.build").open("a") as f: f.write("subdir('tinymesa')\n")
