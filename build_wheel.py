@@ -5,6 +5,7 @@ from distlib.wheel import Wheel
 parser = argparse.ArgumentParser()
 parser.add_argument("--tag")
 parser.add_argument("--sha")
+parser.add_argument("--platform", required=True)
 parser.add_argument("mesa_tag")
 
 args, files = parser.parse_known_args()
@@ -35,5 +36,5 @@ with tempfile.TemporaryDirectory() as td:
   wheel = Wheel()
   pathlib.Path("dist").mkdir(exist_ok=True)
   wheel.name, wheel.version, wheel.dirname = "tinymesa", version, "dist"
-  outfile = wheel.build({"prefix": str(prefix), "platlib": str(platlib)}, tags={"pyver": ["py3"], "abi": ["none"]})
+  outfile = wheel.build({"prefix": str(prefix), "platlib": str(platlib)}, tags={"pyver": ["py3"], "abi": ["none"], "arch": [args.platform]})
   print(f"successfully build {outfile}")
