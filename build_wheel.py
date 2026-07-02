@@ -2,9 +2,9 @@
 import pathlib, sys, shutil, tempfile
 from distlib.wheel import Wheel
 
-assert len(sys.argv) > 2, f"usage: {sys.argv[0]} VERSION FILES..."
-version = sys.argv[1]
-files = [pathlib.Path(f) for f in sys.argv[2:]]
+assert len(sys.argv) > 3, f"usage: {sys.argv[0]} MESA_TAG VERSION FILES..."
+version = f"{sys.argv[1].split('-')[1]}.{sys.argv[2]}"
+files = [pathlib.Path(f) for f in sys.argv[3:]]
 
 init = "\n".join(["import pathlib", "root = pathlib.Path(__file__).parent"] +
                  [f"{f.stem} = root / {f.name!r}" for f in files] + ["__all__ = [" + ", ".join([repr(f.stem) for f in files]) + "]"])

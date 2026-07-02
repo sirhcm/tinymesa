@@ -41,7 +41,7 @@ jobs:
           EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
           ninja -C build src/tinymesa/libtinymesa$EXT src/tinymesa/libtinymesa_cpu$EXT
       - name: Build wheel
-        run: ./build_wheel.py ${{ github.workspace }}/mesa/src/tinymesa/libtinymesa${{ runner.os == 'macOS' && '.dylib' || '.so' }}
+        run: ./build_wheel.py ${{ matrix.tag }} 1337 ${{ github.workspace }}/mesa/src/tinymesa/libtinymesa${{ runner.os == 'macOS' && '.dylib' || '.so' }} ${{ github.workspace }}/mesa/src/tinymesa/libtinymesa_cpu${{ runner.os == 'macOS' && '.dylib' || '.so' }}
       - name: Test loading with ctypes
         run: |
           pip install dist/*.whl
