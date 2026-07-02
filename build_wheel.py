@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-import pathlib, sys, shutil, tempfile
+import argparse, pathlib, shutil, tempfile
 from distlib.wheel import Wheel
 
-assert len(sys.argv) > 3, f"usage: {sys.argv[0]} MESA_TAG VERSION FILES..."
-version = f"{sys.argv[1].split('-')[1]}.{sys.argv[2]}"
-files = [pathlib.Path(f) for f in sys.argv[3:]]
+parser = argparse.ArgumentParser()
+parser.add_argument("--tag")
+parser.add_argument("--sha")
+parser.add_argument("mesa_tag")
+
+args, files = parser.parse_known_args()
+if args.tag: assert args.tag.startswith('v') and args.tag[1:].isdigit(), "expected tag of form 'vN'"
+else: assert args.sha, "expected one of --tag or --sha to be set"
+
+version = args.mesa_tag.split('-')[1] + (f".{args.tag[1:]}" if args.tag else f"+{args.sha}")
+files = [pathlib.Path(f) for f in files]
 
 init = "\n".join(["import pathlib", "root = pathlib.Path(__file__).parent"] +
                  [f"{f.stem} = root / {f.name!r}" for f in files] + ["__all__ = [" + ", ".join([repr(f.stem) for f in files]) + "]"])
