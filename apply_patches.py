@@ -8,7 +8,7 @@ mesa_dir = pathlib.Path(sys.argv[1])
 mesa_ver = Version(sys.argv[2].split('-')[1])
 parser = email.parser.HeaderParser()
 
-def system(cmd): subprocess.run(cmd, check=True, cwd=mesa_dir)
+def system(cmd): subprocess.run(cmd.split(), check=True, cwd=mesa_dir)
 
 for p in (pathlib.Path(__file__).parent / 'patches').iterdir():
   if mesa_ver in SpecifierSet(parser.parse(p.open()).get('Mesa-Version', '')):
