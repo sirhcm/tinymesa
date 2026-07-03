@@ -101,7 +101,7 @@ jobs:
           polyfill-glibc --target-glibc=2.32 ${{ github.workspace }}/mesa/build/src/tinymesa/libtinymesa*.so
       - name: Build wheel
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VERSION_ARG=(--tag "$GITHUB_REF_NAME")
           else
             VERSION_ARG=(--sha "${GITHUB_SHA::7}")
