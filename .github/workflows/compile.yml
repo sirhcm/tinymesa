@@ -32,8 +32,6 @@ jobs:
           build-libclc: true
       - name: Clone mesa
         run: git clone --depth 1 --branch ${{ matrix.tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
-      - name: Patch mesa
-        run: ./apply_patches.py ${{ github.workspace }}/mesa ${{ matrix.tag }}
       - name: Build mesa
         id: build
         shell: bash
