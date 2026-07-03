@@ -144,4 +144,8 @@ runs:
     - name: Install libclc
       if: runner.os == 'Linux' && inputs.build-libclc == 'true'
       shell: bash
-      run: sudo ninja -C llvm-project/libclc install
+      run: |
+        sudo ninja -C llvm-project/libclc install
+        sudo mkdir /usr/lib/clc
+        sudo ln -sf /usr/share/clc/spirv-mesa3d-.spv /usr/lib/clc/
+        sudo ln -sf /usr/share/clc/spirv64-mesa3d-.spv /usr/lib/clc/
