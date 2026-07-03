@@ -28,6 +28,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup tinymesa
         uses: ./.github/actions/setup
+        with:
+          build-libclc: true
       - name: Clone mesa
         run: git clone --depth 1 --branch ${{ matrix.tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
       - name: Patch mesa
