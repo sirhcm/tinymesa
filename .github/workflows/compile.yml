@@ -12,6 +12,7 @@ on:
       - 'meson.build'
     tags:
       - 'v*'
+      - 'rusticl*'
   pull_request:
 
 jobs:
@@ -46,6 +47,28 @@ jobs:
         with:
           name: rusticl-${{ matrix.tag }}-${{ matrix.os }}
           path: ${{ steps.build.outputs.rusticl_path }}
+
+  release-rusticl:
+    name: Release rusticl
+    runs-on: ubuntu-22.04
+    needs: rusticl
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/rusticl')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: rusticl-*
+          merge-multiple: true
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME"
 
   tinymesa:
     name: Build tinymesa ${{ matrix.tag }} on ${{ matrix.os }}
