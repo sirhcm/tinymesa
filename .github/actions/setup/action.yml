@@ -127,21 +127,21 @@ runs:
       shell: bash
       run: sudo install -m 0755 ${{ github.workspace }}/polyfill-glibc/polyfill-glibc /usr/local/bin/polyfill-glibc
     - name: Cache libclc
-      if: runner.os == 'Linux' && inputs.build-libclc
+      if: runner.os == 'Linux' && inputs.build-libclc == 'true'
       id: cache-libclc
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/llvm-project/libclc
         key: libclc-${{ runner.os }}-${{ runner.arch }}
     - name: Build libclc
-      if: runner.os == 'Linux' && steps.cache-libclc.outputs.cache-hit != 'true' && inputs.build-libclc
+      if: runner.os == 'Linux' && steps.cache-libclc.outputs.cache-hit != 'true' && inputs.build-libclc == 'true'
       shell: bash
       run: |
         git clone --depth 1 --branch llvmorg-20.1.8 https://github.com/llvm/llvm-project
         cd llvm-project/libclc
-        cmake . -DCMAKE_BUILD_TYPE=Release -G Ninja -DLLVM_CONFIG=$(which llvm-config-20) -DLIBCLC_TARGETS_TO_BUILD="spirv-mesa3d-;spirv64-mesa3d-" -DCMAKE_INSTALL_PREFIX=/usr -DLLVM_SPIRV=$(which llvm-spirv)
+        cmake . -DCMAKE_BUILD_TYPE=Release -G Ninja -DLLVM_DIR=$(llvm-config-20 --cmakedir) -DLIBCLC_TARGETS_TO_BUILD="spirv-mesa3d-;spirv64-mesa3d-" -DCMAKE_INSTALL_PREFIX=/usr -DLLVM_SPIRV=$(which llvm-spirv)
         ninja
     - name: Install libclc
-      if: runner.os == 'Linux' && inputs.build-libclc
+      if: runner.os == 'Linux' && inputs.build-libclc == 'true'
       shell: bash
       run: sudo ninja -C llvm-project/libclc install
