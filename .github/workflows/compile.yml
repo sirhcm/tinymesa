@@ -12,11 +12,66 @@ on:
       - 'meson.build'
     tags:
       - 'v*'
+      - 'rusticl*'
   pull_request:
 
 jobs:
-  build:
-    name: Build ${{ matrix.tag }} on ${{ matrix.os }}
+  rusticl:
+    name: Build rusticl ${{ matrix.tag }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-22.04 ]
+        tag: [ mesa-26.1.4 ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup tinymesa
+        uses: ./.github/actions/setup
+        with:
+          build-libclc: true
+      - name: Clone mesa
+        run: git clone --depth 1 --branch ${{ matrix.tag }} https://gitlab.freedesktop.org/mesa/mesa.git ${{ github.workspace }}/mesa
+      - name: Build mesa
+        id: build
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/mesa
+          export CLANG_PATH=$(which clang-20)
+          meson setup build/ -Dllvm=enabled -Dshared-llvm=disabled -Dstatic-libclc=all -Dgallium-drivers=llvmpipe -Dgallium-rusticl=true -Dglx=disabled -Dvulkan-drivers="[]" -Dopengl=false -Dplatforms="[]" -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
+          meson compile -C build RusticlOpenCL
+          echo "rusticl_path=$(meson introspect build/ --targets | jq -r '.[] | select(.name=="RusticlOpenCL") | .filename[0]')" >> "$GITHUB_OUTPUT"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rusticl-${{ matrix.tag }}-${{ matrix.os }}
+          path: ${{ steps.build.outputs.rusticl_path }}
+
+  release-rusticl:
+    name: Release rusticl
+    runs-on: ubuntu-22.04
+    needs: rusticl
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/rusticl')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: rusticl-*
+          merge-multiple: true
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME"
+
+  tinymesa:
+    name: Build tinymesa ${{ matrix.tag }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -38,8 +93,7 @@ jobs:
           cd ${{ github.workspace }}/mesa
           export CLANG_PATH=$(which clang-20)
           meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau,freedreno -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
-          EXT=$([[ "${{ runner.os }}" == "macOS" ]] && echo ".dylib" || echo ".so")
-          ninja -C build src/tinymesa/libtinymesa$EXT src/tinymesa/libtinymesa_cpu$EXT
+          meson compile -C build tinymesa tinymesa_cpu
       - name: Polyfill glibc
         if: runner.os == 'Linux'
         run: |
@@ -68,7 +122,7 @@ jobs:
   release:
     name: Release tinymesa
     runs-on: ubuntu-22.04
-    needs: build
+    needs: tinymesa
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     environment:
       name: pypi
@@ -82,6 +136,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist
+          pattern: tinymesa-whl-*
           merge-multiple: true
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
