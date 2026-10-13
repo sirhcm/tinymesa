@@ -90,7 +90,6 @@ into Termux's library directory. The Android build includes NIR and
 IR3/freedreno, but not NAK or LLVMpipe.
 
 ```sh
-TAG=YOUR_RELEASE_TAG  # Choose a published v* release containing this Android asset.
-curl -fL "https://github.com/sirhcm/tinymesa/releases/download/${TAG}/libtinymesa-mesa-25.2.7-android-arm64-v8a.so" \
+curl -fL "https://github.com/sirhcm/tinymesa/releases/download/android/libtinymesa-android-arm64-v8a.so" \
   -o "$PREFIX/lib/libtinymesa.so"
 ```

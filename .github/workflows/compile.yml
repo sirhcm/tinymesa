@@ -143,10 +143,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp mesa/build/src/tinymesa/libtinymesa.so libtinymesa-${{ matrix.tag }}-android-arm64-v8a.so
-          gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 ||
-            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
-          gh release upload "$GITHUB_REF_NAME" libtinymesa-${{ matrix.tag }}-android-arm64-v8a.so --clobber
+          cp mesa/build/src/tinymesa/libtinymesa.so libtinymesa-android-arm64-v8a.so
+          gh release view android > /dev/null 2>&1 ||
+            gh release create android --target "$GITHUB_SHA" --title "Android arm64" --notes "Updated on tinymesa version releases." --latest=false
+          gh release upload android libtinymesa-android-arm64-v8a.so --clobber
   release:
     name: Release tinymesa
     runs-on: ubuntu-22.04
