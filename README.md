@@ -82,3 +82,14 @@ all these symbols, but in addition, a subset of symbols from `gallium`
 (see release notes), and as a result depends on LLVM-20.
 
 Builds are automatically generated upon new releases of mesa (checked daily).
+
+### Android (Termux)
+
+On arm64 Termux with Android 11 (API 30) or newer, download `libtinymesa.so`
+into Termux's library directory. The Android build includes NIR and
+IR3/freedreno, but not NAK or LLVMpipe.
+
+```sh
+curl -fL "https://github.com/sirhcm/tinymesa/releases/download/android/libtinymesa-android-arm64-v8a.so" \
+  -o "$PREFIX/lib/libtinymesa.so"
+```

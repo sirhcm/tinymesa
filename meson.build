@@ -52,6 +52,10 @@ foreach sym : ir3_symbols
   ir3_link_args += '-Wl,-u,' + symbol_prefix + sym
 endforeach
 
-shared_library('tinymesa', link_whole : [ _libnir ], link_args : nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common ], dependencies : [ idep_nak ])
-shared_library('tinymesa_cpu', link_whole : [ _libnir ], link_args : lvp_link_args+nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common, libgallium ], dependencies : [ idep_nak ])
+if host_machine.system() == 'android'
+  shared_library('tinymesa', link_whole : [ _libnir ], link_args : ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common ])
+else
+  shared_library('tinymesa', link_whole : [ _libnir ], link_args : nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common ], dependencies : [ idep_nak ])
+  shared_library('tinymesa_cpu', link_whole : [ _libnir ], link_args : lvp_link_args+nak_link_args+ir3_link_args, link_with : [ libfreedreno_ir3, libfreedreno_common, libgallium ], dependencies : [ idep_nak ])
+endif
 

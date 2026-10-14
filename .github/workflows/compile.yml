@@ -10,6 +10,7 @@ on:
     paths:
       - '.github/**'
       - 'meson.build'
+      - 'android.ini'
     tags:
       - 'v*'
       - 'rusticl*'
@@ -72,11 +73,13 @@ jobs:
 
   tinymesa:
     name: Build tinymesa ${{ matrix.tag }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os == 'android' && 'ubuntu-22.04' || matrix.os }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-22.04, ubuntu-22.04-arm, macos-14 ]
+        os: [ ubuntu-22.04, ubuntu-22.04-arm, macos-14, android ]
         tag: [ mesa-25.2.7 ]
     steps:
       - name: Checkout repository
@@ -88,14 +91,23 @@ jobs:
       - name: Patch mesa
         run: ./apply_patches.py ${{ github.workspace }}/mesa ${{ matrix.tag }}
       - name: Build mesa
+        if: matrix.os != 'android'
         shell: bash
         run: |
           cd ${{ github.workspace }}/mesa
           export CLANG_PATH=$(which clang-20)
           meson setup build/ -Db_staticpic=true -Dgallium-drivers=llvmpipe -Dplatforms="[]" -Dglx=disabled -Dvulkan-drivers=swrast,nouveau,freedreno -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
           meson compile -C build tinymesa tinymesa_cpu
+      - name: Build mesa (Android)
+        if: matrix.os == 'android'
+        shell: bash
+        run: |
+          export PATH="$ANDROID_SDK_ROOT/ndk/29.0.14206865/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          cd ${{ github.workspace }}/mesa
+          meson setup build/ --cross-file=../android.ini -Db_staticpic=true -Dplatforms=android -Dplatform-sdk-version=30 -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-drivers="[]" -Dvulkan-drivers=freedreno -Dfreedreno-kmds=kgsl -Dllvm=disabled -Dshader-cache=disabled -Dzstd=disabled -Dzlib=disabled -Dopengl=false -Degl=disabled -Dgbm=disabled -Dvideo-codecs="[]"
+          meson compile -C build tinymesa
       - name: Polyfill glibc
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.os != 'android'
         run: |
           # can't go earlier than 2.32 because of __libc_single_threaded@GLIBC_2.32
           polyfill-glibc --target-glibc=2.32 ${{ github.workspace }}/mesa/build/src/tinymesa/libtinymesa*.so
@@ -108,9 +120,10 @@ jobs:
           fi
 
           ./build_wheel.py "${VERSION_ARG[@]}" \
-            --platform ${{ matrix.os == 'ubuntu-22.04' && 'manylinux_2_32_x86_64' || matrix.os == 'ubuntu-22.04-arm' && 'manylinux_2_32_aarch64' || 'macosx_14_0_arm64' }} \
+            --platform ${{ matrix.os == 'android' && 'android_30_arm64_v8a' || matrix.os == 'ubuntu-22.04' && 'manylinux_2_32_x86_64' || matrix.os == 'ubuntu-22.04-arm' && 'manylinux_2_32_aarch64' || 'macosx_14_0_arm64' }} \
             ${{ matrix.tag }} ${{ github.workspace }}/mesa/build/src/tinymesa/libtinymesa*${{ runner.os == 'macOS' && '.dylib' || '.so' }}
       - name: Test loading with ctypes
+        if: matrix.os != 'android'
         run: |
           pip install dist/*.whl
           python3 -c "from ctypes import CDLL; from tinymesa import libtinymesa, libtinymesa_cpu; CDLL(libtinymesa).glsl_type_singleton_init_or_ref(), CDLL(libtinymesa_cpu).glsl_type_singleton_init_or_ref()"
@@ -119,6 +132,21 @@ jobs:
         with:
           name: tinymesa-whl-${{ matrix.tag }}-${{ matrix.os }}
           path: dist/
+      - name: Upload Android library
+        if: matrix.os == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tinymesa-${{ matrix.tag }}-android-arm64-v8a
+          path: mesa/build/src/tinymesa/libtinymesa.so
+      - name: Attach Android library to GitHub release
+        if: matrix.os == 'android' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp mesa/build/src/tinymesa/libtinymesa.so libtinymesa-android-arm64-v8a.so
+          gh release view android > /dev/null 2>&1 ||
+            gh release create android --target "$GITHUB_SHA" --title "Android arm64" --notes "Updated on tinymesa version releases." --latest=false
+          gh release upload android libtinymesa-android-arm64-v8a.so --clobber
   release:
     name: Release tinymesa
     runs-on: ubuntu-22.04
